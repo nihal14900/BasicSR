@@ -10,25 +10,20 @@ datasets:
   train:
     name: DIV2K
     type: PairedImageDataset
-    dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub
-    dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X4_sub
-    # (for lmdb)
-    # dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub.lmdb
-    # dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic_X4_sub.lmdb
+    dataroot_gt: E:/Codes/BasicSR/datasets/DF2K/HR_sub
+    dataroot_lq: E:/Codes/BasicSR/datasets/DF2K/LRx4_sub
     filename_tmpl: '{}'
     io_backend:
       type: disk
-      # (for lmdb)
-      # type: lmdb
 
-    gt_size: 192
+    gt_size: 256
     use_hflip: true
     use_rot: true
 
     # data loader
-    num_worker_per_gpu: 6
+    num_worker_per_gpu: 4
     batch_size_per_gpu: 16
-    dataset_enlarge_ratio: 100
+    dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
   val:
@@ -49,11 +44,11 @@ network_g:
   upscale: 4
   res_scale: 0.1
   img_range: 255.
-  rgb_mean: [0.4488, 0.4371, 0.4040]
+  rgb_mean: [0.468898, 0.448961, 0.403436]
 
 # path
 path:
-  pretrain_network_g: experiments/204_EDSR_Lx2_f256b32_DIV2K_300k_B16G1_wandb/models/net_g_300000.pth
+  pretrain_network_g:
   strict_load_g: false
   resume_state: ~
 
@@ -62,17 +57,20 @@ train:
   ema_decay: 0.999
   optim_g:
     type: Adam
-    lr: !!float 1e-4
+    lr: !!float 2e-4
     weight_decay: 0
     betas: [0.9, 0.99]
 
   scheduler:
     type: MultiStepLR
-    milestones: [200000]
-    gamma: 0.5
+    milestones: [250000, 400000, 450000, 475000]
+    gamma: 0.9
 
-  total_iter: 300000
+  total_iter: 500000
   warmup_iter: -1  # no warm up
+
+  # 🔧 Enable mixed precision here
+  mixed_precision: true  # <<==== ENABLED HERE
 
   # losses
   pixel_opt:
@@ -82,7 +80,7 @@ train:
 
 # validation settings
 val:
-  val_freq: !!float 5e3
+  val_freq: !!float 1000
   save_img: false
 
   metrics:
@@ -91,10 +89,15 @@ val:
       crop_border: 4
       test_y_channel: false
 
+    ssim: # metric name, can be arbitrary
+      type: calculate_ssim
+      crop_border: 4
+      test_y_channel: false
+
 # logging settings
 logger:
-  print_freq: 100
-  save_checkpoint_freq: !!float 5e3
+  print_freq: 1000
+  save_checkpoint_freq: !!float 1000
   use_tb_logger: true
   wandb:
     project: ~

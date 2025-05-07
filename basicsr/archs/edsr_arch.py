@@ -4,6 +4,7 @@ from torch import nn as nn
 from basicsr.archs.arch_util import ResidualBlockNoBN, Upsample, make_layer
 from basicsr.utils.registry import ARCH_REGISTRY
 
+from dhab_5_0 import DualHelixAttentionBlock
 
 @ARCH_REGISTRY.register()
 class EDSR(nn.Module):
@@ -42,7 +43,19 @@ class EDSR(nn.Module):
         self.mean = torch.Tensor(rgb_mean).view(1, 3, 1, 1)
 
         self.conv_first = nn.Conv2d(num_in_ch, num_feat, 3, 1, 1)
-        self.body = make_layer(ResidualBlockNoBN, num_block, num_feat=num_feat, res_scale=res_scale, pytorch_init=True)
+        # self.body = make_layer(ResidualBlockNoBN, num_block, num_feat=num_feat, res_scale=res_scale, pytorch_init=True)
+        self.body = make_layer(DualHelixAttentionBlock, 16,
+                                embed_dim=64,
+                                num_heads=2,
+                                expansion=4,
+                                spatial_dense_ranges=[3, 5],
+                                spatial_sparse_ranges=[5, 7],
+                                freq_dense_ranges=[3, 5],
+                                freq_sparse_ranges=[5, 7],
+                                freq_sparse_dilations=[2, 3],
+                                spatial_chunk_size=48,
+                                window_size=8,
+                                dropout=0.0)
         self.conv_after_body = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
         self.upsample = Upsample(upscale, num_feat)
         self.conv_last = nn.Conv2d(num_feat, num_out_ch, 3, 1, 1)
