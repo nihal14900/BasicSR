@@ -1,5 +1,5 @@
 # general settings
-name: 206_EDSR_Lx4_f256b32_DIV2K_300k_B16G1_204pretrain_wandb
+name: EDSR_Lx4_f128b8_DF2K_500K_B4G1
 model_type: SRModel
 scale: 4
 num_gpu: 1  # set num_gpu: 0 for cpu mode
@@ -10,8 +10,8 @@ datasets:
   train:
     name: DIV2K
     type: PairedImageDataset
-    dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub
-    dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X4_sub
+    dataroot_gt: datasets/Train/Processed/DF2K/HR
+    dataroot_lq: datasets/Train/Processed/DF2K/LR_Bicubic/X4
     # (for lmdb)
     # dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub.lmdb
     # dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic_X4_sub.lmdb
@@ -21,21 +21,21 @@ datasets:
       # (for lmdb)
       # type: lmdb
 
-    gt_size: 192
+    gt_size: 256
     use_hflip: true
     use_rot: true
 
     # data loader
     num_worker_per_gpu: 6
-    batch_size_per_gpu: 16
-    dataset_enlarge_ratio: 100
+    batch_size_per_gpu: 4
+    dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
   val:
     name: Set5
     type: PairedImageDataset
-    dataroot_gt: datasets/Set5/GTmod12
-    dataroot_lq: datasets/Set5/LRbicx4
+    dataroot_gt: datasets/Test/Set5/HR
+    dataroot_lq: datasets/Test/Set5/LR_Bicubic/X4
     io_backend:
       type: disk
 
@@ -44,8 +44,8 @@ network_g:
   type: EDSR
   num_in_ch: 3
   num_out_ch: 3
-  num_feat: 256
-  num_block: 32
+  num_feat: 128
+  num_block: 8
   upscale: 4
   res_scale: 0.1
   img_range: 255.
@@ -53,25 +53,25 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: experiments/204_EDSR_Lx2_f256b32_DIV2K_300k_B16G1_wandb/models/net_g_300000.pth
+  pretrain_network_g:
   strict_load_g: false
-  resume_state: ~
+  resume_state:
 
 # training settings
 train:
   ema_decay: 0.999
   optim_g:
     type: Adam
-    lr: !!float 1e-4
+    lr: !!float 2e-4
     weight_decay: 0
     betas: [0.9, 0.99]
 
   scheduler:
     type: MultiStepLR
-    milestones: [200000]
+    milestones: [250000, 40000, 450000, 475000]
     gamma: 0.5
 
-  total_iter: 300000
+  total_iter: 500000
   warmup_iter: -1  # no warm up
 
   # losses
@@ -82,22 +82,26 @@ train:
 
 # validation settings
 val:
-  val_freq: !!float 5e3
-  save_img: false
+  val_freq: !!float 1000
+  save_img: true
 
   metrics:
     psnr: # metric name, can be arbitrary
       type: calculate_psnr
       crop_border: 4
-      test_y_channel: false
+      test_y_channel: true
+    ssim: # metric name, can be arbitrary
+      type: calculate_ssim
+      crop_border: 4
+      test_y_channel: true
 
 # logging settings
 logger:
-  print_freq: 100
-  save_checkpoint_freq: !!float 5e3
+  print_freq: 1000
+  save_checkpoint_freq: !!float 1000
   use_tb_logger: true
   wandb:
-    project: ~
+    project: Thesis_channels128
     resume_id: ~
 
 # dist training settings

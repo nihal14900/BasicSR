@@ -85,7 +85,7 @@ def main():
     for size in ax.get_yticklabels():  # Set fontsize for y-axis
         size.set_fontsize('30')
 
-    ax.grid(b=True, linestyle='-.', linewidth=0.5)
+    ax.grid(True, linestyle='-.', linewidth=0.5)
     plt.show()
 
     fig.savefig('model_complexity_cmp_bsrn.png')
