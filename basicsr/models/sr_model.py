@@ -32,6 +32,9 @@ class SRModel(BaseModel):
         if self.is_train:
             self.init_training_settings()
 
+        self.accumulation_steps = self.opt['train'].get('accumulation_steps', 1)
+        self._grad_accum_step = 0
+
     def init_training_settings(self):
         self.net_g.train()
         train_opt = self.opt['train']
@@ -89,18 +92,46 @@ class SRModel(BaseModel):
         if 'gt' in data:
             self.gt = data['gt'].to(self.device)
 
+    # def optimize_parameters(self, current_iter):
+    #     self.optimizer_g.zero_grad()
+    #     self.output = self.net_g(self.lq)
+
+    #     l_total = 0
+    #     loss_dict = OrderedDict()
+    #     # pixel loss
+    #     if self.cri_pix:
+    #         l_pix = self.cri_pix(self.output, self.gt)
+    #         l_total += l_pix
+    #         loss_dict['l_pix'] = l_pix
+    #     # perceptual loss
+    #     if self.cri_perceptual:
+    #         l_percep, l_style = self.cri_perceptual(self.output, self.gt)
+    #         if l_percep is not None:
+    #             l_total += l_percep
+    #             loss_dict['l_percep'] = l_percep
+    #         if l_style is not None:
+    #             l_total += l_style
+    #             loss_dict['l_style'] = l_style
+
+    #     l_total.backward()
+    #     self.optimizer_g.step()
+
+    #     self.log_dict = self.reduce_loss_dict(loss_dict)
+
+    #     if self.ema_decay > 0:
+    #         self.model_ema(decay=self.ema_decay)
+
     def optimize_parameters(self, current_iter):
-        self.optimizer_g.zero_grad()
+        self._grad_accum_step += 1
+        # Forward
         self.output = self.net_g(self.lq)
 
         l_total = 0
         loss_dict = OrderedDict()
-        # pixel loss
         if self.cri_pix:
             l_pix = self.cri_pix(self.output, self.gt)
             l_total += l_pix
             loss_dict['l_pix'] = l_pix
-        # perceptual loss
         if self.cri_perceptual:
             l_percep, l_style = self.cri_perceptual(self.output, self.gt)
             if l_percep is not None:
@@ -110,13 +141,20 @@ class SRModel(BaseModel):
                 l_total += l_style
                 loss_dict['l_style'] = l_style
 
+        l_total = l_total / self.accumulation_steps  # Scale loss
         l_total.backward()
-        self.optimizer_g.step()
+
+        # Step the optimizer every accumulation_steps iterations
+        if self._grad_accum_step == self.accumulation_steps:
+            self.optimizer_g.step()
+            self.optimizer_g.zero_grad()
+            self._grad_accum_step = 0
+
+            if self.ema_decay > 0:
+                self.model_ema(decay=self.ema_decay)
 
         self.log_dict = self.reduce_loss_dict(loss_dict)
 
-        if self.ema_decay > 0:
-            self.model_ema(decay=self.ema_decay)
 
     def test(self):
         if hasattr(self, 'net_g_ema'):

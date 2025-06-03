@@ -48,7 +48,7 @@ class EDSR(nn.Module):
 
         self.conv_first = nn.Conv2d(num_in_ch, num_feat, 3, 1, 1)
         # self.body = make_layer(ResidualBlockNoBN, num_block, num_feat=num_feat, res_scale=res_scale, pytorch_init=True)
-        self.body = make_layer(BasicBlock, num_block, input_channels=num_feat, norm_groups=num_feat // 8, num_heads=4, kernel_sizes=[5, 7], dilations=[1, 1], window_size=(8, 8), ffn_expansion=2, use_checkpoint=False, use_mixed_precision=False)
+        self.body = make_layer(BasicBlock, num_block, input_channels=num_feat, norm_groups=4, num_heads=4, kernel_sizes=[3, 5], dilations=[1, 1], window_size=(8, 8), ffn_expansion=2, use_checkpoint=False, use_mixed_precision=False)
         self.conv_after_body = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
         self.upsample = Upsample(upscale, num_feat)
         self.conv_last = nn.Conv2d(num_feat, num_out_ch, 3, 1, 1)

@@ -12,7 +12,9 @@ class Conv3GN(nn.Module):
         self.act = nn.GELU()
 
     def forward(self, x):
-        return self.act(self.norm(self.conv(x)))
+        # return self.act(self.norm(self.conv(x)))
+        return self.act(self.conv(x))
+
 
 
 class PixelUnshuffle(nn.Module):

@@ -272,13 +272,13 @@ class BasicBlock(torch.nn.Module):
         # print("pre-fusion: ", x.shape, y.shape, z.shape)
 
         # Feature Fusion
-        # yz = self.fusion(torch.cat([y, z], 1))
-        concat = torch.cat([y, z], 1)
-        gate = self.gate(concat)
-        gated = gate * y + (1 - gate) * z
-        fused = self.fusion(concat)
-        yz = gated + fused
-        x = self.proj_x(x)
+        yz = self.fusion(torch.cat([y, z], 1))
+        # concat = torch.cat([y, z], 1)
+        # gate = self.gate(concat)
+        # gated = gate * y + (1 - gate) * z
+        # fused = self.fusion(concat)
+        # yz = gated + fused
+        # x = self.proj_x(x)
 
         # print("post-fusion: ", x.shape, yz.shape)
 
